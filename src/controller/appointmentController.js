@@ -45,7 +45,7 @@ const createAppointment = async function (req, res) {
 
         let savedata = await appointmentModel.create(data)
 
-        return res.status(200).send({ status: true, message: "appointment booked successfully", data: savedata })
+        return res.status(200).send({ status: true, message: "appointment scheduled successfully", data: savedata })
     }
     catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -56,7 +56,7 @@ const createAppointment = async function (req, res) {
 const getAllAppointment = async function (req, res) {
     try {
         const allData = await appointmentModel.find()
-        return res.status(200).send({ status: true, message: "getting all booked appointment successfully", data: allData })
+        return res.status(200).send({ status: true, message: "getting all scheduled appointment successfully", data: allData })
     }
     catch (err) {
         return res.status(500).send({ status: false, message: err.message });
