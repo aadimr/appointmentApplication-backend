@@ -62,7 +62,8 @@ const loginAdmin = async (req, res) => {
         }
         let adminExist = await adminModel.findOne({ $or: [{ emailId: emailId }] })
         if (!adminExist) { return res.status(404).send({ status: false, message: "User doesn't exists !" }) }
-        if (adminExist.password != password) { return res.status(400).send({ status: false, message: "Please enter correct password" }) }
+        const passwordCompare = bcrypt.compare(password,adminExist.password)
+        if (!passwordCompare) { return res.status(400).send({ status: false, message: "Please enter correct password" }) }
         let token = jwt.sign({ adminId: adminExist._id, email: adminExist.emailId }, jwtSecret, { expiresIn: "1096h" })
         let saveData = {
             token: token

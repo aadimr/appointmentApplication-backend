@@ -1,4 +1,9 @@
 const appointmentModel = require("../model/appointmentModel")
+const nodemailer = require('nodemailer');
+const Mailgen = require('mailgen');
+require("dotenv").config()
+const EMAIL = process.env.EMAIL;
+const PASSWORD = process.env.EMAIL_PASSWORD;
 const regEmail = /^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$/
 const regName = /^[A-Za-z]+(?: [A-Za-z]+)*$/
 const regPhone = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/
@@ -45,6 +50,42 @@ const createAppointment = async function (req, res) {
 
         let savedata = await appointmentModel.create(data)
 
+        let config = {
+            service: 'gmail',
+            auth: {
+                user: EMAIL,
+                pass: PASSWORD
+            }
+        }
+
+        let transporter = nodemailer.createTransport(config);
+
+        let MailGenerator = new Mailgen({
+            theme: "default",
+            product: {
+                name: "Mailgen",
+                link: 'https://mailgen.js/'
+            }
+        })
+
+        let response = {
+            body: {
+                name: 'Appointment',
+                intro: 'Your Appointment is scheduled successfully now wait for confirmation mail',
+            }
+        }
+
+        let mail = MailGenerator.generate(response)
+
+        let message = {
+            from: EMAIL,
+            to: savedata.emailId,
+            subject: "Appointment scheduled",
+            html: mail
+        }
+
+        await transporter.sendMail(message);
+
         return res.status(200).send({ status: true, message: "appointment scheduled successfully", data: savedata })
     }
     catch (err) {
@@ -63,7 +104,52 @@ const getAllAppointment = async function (req, res) {
     }
 }
 
+const rescheduleAppointment = async function (req, res) {
+    try {
+        const appointmentId = req.params.appointmentId
+
+        let data = req.body;
+
+        const { DateAndTime } = data
+
+        if (!DateAndTime) return res.status(400).send({ status: false, message: "please select the date and time" })
+        if (typeof DateAndTime !== "string" || DateAndTime.trim().length === 0) {
+            return res.status(400).send({ status: false, message: "please select the date and time" })
+        }
+
+        let updatedData = await appointmentModel.findOneAndUpdate({ _id: appointmentId }, {
+            $set: { DateAndTime: DateAndTime },
+        }, { new: true });
+        return res.status(200).send({ status: true, message: "Appointment rescheduled successfully", data: updatedData })
+
+    } catch (error) { res.status(500).send({ status: false, msg: error.message }) }
+};
+
+const appointmentConfirmation = async function (req, res) {
+    try {
+        const appointmentId = req.params.appointmentId
+
+        // let data = req.body;
+
+        // const { confirmOrcancelAppointment } = data
+
+        // if (!confirmOrcancelAppointment) return res.status(400).send({ status: false, message: "please select the date and time" })
+        // if (typeof DateAndTime !== "string" || DateAndTime.trim().length === 0) {
+        //     return res.status(400).send({ status: false, message: "please select the date and time" })
+        // } 
+        let updatedData = await appointmentModel.findOneAndUpdate({ _id: appointmentId }, {
+            $set: { confirmOrcancelAppointment: "confirm" }
+        }, { upsert: true });
+        // console.log()
+        return res.status(200).send({ status: true, message: "Appointment confirmed", data: updatedData, })
+
+    } catch (error) { res.status(500).send({ status: false, msg: error.message }) }
+};
+
+
 module.exports = {
     createAppointment,
-    getAllAppointment
+    getAllAppointment,
+    rescheduleAppointment,
+    appointmentConfirmation,
 };
