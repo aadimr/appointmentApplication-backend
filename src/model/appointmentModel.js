@@ -21,7 +21,11 @@ const appointmentSchema = new mongoose.Schema(
         DateAndTime: {
             type: Date,
             require: true
-        }
+        },
+        confirmOrCancelAppointment:{
+            type: String,
+            default: null
+        },
     },
     { timestamps: true }
 )
